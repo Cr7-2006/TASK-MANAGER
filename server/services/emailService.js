@@ -65,7 +65,7 @@ const sendTaskEmail = async (recipientEmail, username, subject, title, status, d
     </div>
   `;
 
-  await sendEmailViaResend(recipientEmail, \`TaskMaster Alert: \${subject}\`, html);
+  await sendEmailViaResend(recipientEmail, `TaskMaster Alert: ${subject}`, html);
 };
 
 // ─── Welcome / Registration Email ────────────────────────────────
