@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
@@ -44,16 +45,18 @@ app.use(express.urlencoded({ extended: false }));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/tasks', require('./routes/taskRoutes'));
 
-// Serve static assets in production
-if (process.env.NODE_ENV === 'production') {
-  // Set static folder
-  app.use(express.static(path.join(__dirname, '../client/dist')));
+// Serve static assets in production if frontend build exists
+const distPath = path.join(__dirname, '../client/dist');
+const indexPath = path.resolve(__dirname, '../client', 'dist', 'index.html');
+
+if (process.env.NODE_ENV === 'production' && fs.existsSync(indexPath)) {
+  app.use(express.static(distPath));
 
   app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../client', 'dist', 'index.html'));
+    res.sendFile(indexPath);
   });
 } else {
-  // Root endpoint for health check / local testing in development
+  // Root endpoint for health check / local testing in development or standalone backend mode
   app.get('/', (req, res) => {
     res.json({ message: 'Task Manager API is running...' });
   });
