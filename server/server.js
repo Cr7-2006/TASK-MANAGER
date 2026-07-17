@@ -15,6 +15,9 @@ connectDB();
 
 const app = express();
 
+// Trust reverse proxy (needed for express-rate-limit on Render/Vercel/Heroku)
+app.set('trust proxy', 1);
+
 // Security Middleware
 app.use(helmet());
 
