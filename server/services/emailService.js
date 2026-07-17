@@ -1,4 +1,6 @@
-// Use native fetch to call Resend API (HTTP port 443) to bypass Render SMTP block
+const https = require('https');
+
+// Use native https module to support all Node.js versions (including Node 14/16)
 const sendEmailViaResend = async (to, subject, htmlContent) => {
   const resendApiKey = process.env.RESEND_API_KEY;
   if (!resendApiKey) {
@@ -8,31 +10,58 @@ const sendEmailViaResend = async (to, subject, htmlContent) => {
 
   // Note: On Resend's free tier without a verified domain, you must use 'onboarding@resend.dev' as the from address.
   const fromEmail = process.env.RESEND_FROM_EMAIL || "TaskMaster <onboarding@resend.dev>";
+  const postData = JSON.stringify({
+    from: fromEmail,
+    to: [to],
+    subject: subject,
+    html: htmlContent,
+  });
+
+  const options = {
+    hostname: 'api.resend.com',
+    port: 443,
+    path: '/emails',
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${resendApiKey}`,
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(postData),
+    },
+  };
 
   try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: [to],
-        subject: subject,
-        html: htmlContent,
-      }),
-    });
+    await new Promise((resolve, reject) => {
+      const req = https.request(options, (res) => {
+        let body = '';
+        res.on('data', (chunk) => {
+          body += chunk;
+        });
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            try {
+              const data = JSON.parse(body);
+              console.log(`[Email Service] Email sent successfully to ${to} via Resend. ID: ${data.id}`);
+            } catch (e) {
+              console.log(`[Email Service] Email sent successfully to ${to} via Resend.`);
+            }
+            resolve();
+          } else {
+            console.error(`[Email Service] Resend API Error Status ${res.statusCode}:`, body);
+            resolve(); // Resolve to prevent throwing uncaught exceptions up the chain
+          }
+        });
+      });
 
-    const data = await response.json();
-    
-    if (response.ok) {
-      console.log(`[Email Service] Email sent successfully to ${to} via Resend. ID: ${data.id}`);
-    } else {
-      console.error(`[Email Service] Resend API Error:`, data);
-    }
+      req.on('error', (error) => {
+        console.error('[Email Service] Failed to execute Resend API request:', error);
+        resolve(); // Resolve to keep it non-blocking and prevent crashes
+      });
+
+      req.write(postData);
+      req.end();
+    });
   } catch (error) {
-    console.error('[Email Service] Failed to execute Resend API request:', error);
+    console.error('[Email Service] Unexpected error in sendEmailViaResend:', error);
   }
 };
 
