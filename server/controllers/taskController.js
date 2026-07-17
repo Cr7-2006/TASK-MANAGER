@@ -105,10 +105,10 @@ const createTask = async (req, res) => {
       user: req.user.id,
     });
 
-    // Send task creation email alert
+    // Send task creation email alert (non-blocking)
     const userObj = await User.findById(req.user.id);
     if (userObj) {
-      await sendTaskEmail(userObj.email, userObj.name, 'New Task Created', createdTask.title, createdTask.status, createdTask.description);
+      sendTaskEmail(userObj.email, userObj.name, 'New Task Created', createdTask.title, createdTask.status, createdTask.description);
     }
 
     res.status(201).json({ success: true, data: createdTask });
@@ -163,11 +163,11 @@ const updateTask = async (req, res) => {
       runValidators: true,
     });
 
-    // Send completion email alert if task was transitioned to completed
+    // Send completion email alert if task was transitioned to completed (non-blocking)
     if (isCompleted && !wasCompleted) {
       const userObj = await User.findById(req.user.id);
       if (userObj) {
-        await sendTaskEmail(userObj.email, userObj.name, 'Task Completed! 🎉', task.title, 'completed', task.description);
+        sendTaskEmail(userObj.email, userObj.name, 'Task Completed! 🎉', task.title, 'completed', task.description);
       }
     }
 

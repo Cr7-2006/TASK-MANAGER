@@ -140,7 +140,7 @@ const Dashboard = () => {
 
     // Optimistic UI update for immediate response
     const originalTasks = [...tasks];
-    setTasks(tasks.map(t => (t._id === taskId ? { ...t, status: targetStatus } : t)));
+    setTasks(prevTasks => prevTasks.map(t => (t._id === taskId ? { ...t, status: targetStatus } : t)));
 
     try {
       const res = await updateTask(taskId, { status: targetStatus });
@@ -164,13 +164,13 @@ const Dashboard = () => {
       if (editingTask) {
         const res = await updateTask(editingTask._id, taskData);
         if (res.success) {
-          setTasks(tasks.map(t => (t._id === editingTask._id ? res.data : t)));
+          setTasks(prevTasks => prevTasks.map(t => (t._id === editingTask._id ? res.data : t)));
           toast.success('Task updated successfully');
         }
       } else {
         const res = await createTask(taskData);
         if (res.success) {
-          setTasks([res.data, ...tasks]);
+          setTasks(prevTasks => [res.data, ...prevTasks]);
           toast.success('Task created successfully');
         }
       }
@@ -200,7 +200,7 @@ const Dashboard = () => {
     try {
       const res = await deleteTask(taskToDelete);
       if (res.success) {
-        setTasks(tasks.filter(t => t._id !== taskToDelete));
+        setTasks(prevTasks => prevTasks.map(t => t).filter(t => t._id !== taskToDelete));
         toast.success('Task deleted successfully');
       }
     } catch (err) {
@@ -217,7 +217,7 @@ const Dashboard = () => {
     try {
       const res = await updateTask(id, { status: newStatus });
       if (res.success) {
-        setTasks(tasks.map(t => (t._id === id ? res.data : t)));
+        setTasks(prevTasks => prevTasks.map(t => (t._id === id ? res.data : t)));
         toast.success(`Task status updated to ${newStatus === 'in-progress' ? 'in progress' : newStatus}`);
       }
     } catch (err) {
