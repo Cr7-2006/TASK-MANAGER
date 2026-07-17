@@ -45,11 +45,11 @@ app.use(express.urlencoded({ extended: false }));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/tasks', require('./routes/taskRoutes'));
 
-// Serve static assets in production if frontend build exists
+// Serve static assets in production if explicitly requested and frontend build exists
 const distPath = path.join(__dirname, '../client/dist');
 const indexPath = path.resolve(__dirname, '../client', 'dist', 'index.html');
 
-if (process.env.NODE_ENV === 'production' && fs.existsSync(indexPath)) {
+if (process.env.SERVE_STATIC === 'true' && fs.existsSync(indexPath)) {
   app.use(express.static(distPath));
 
   app.get('*', (req, res) => {
